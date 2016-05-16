@@ -6,6 +6,7 @@ import scala.collection.immutable.Queue
 trait SchedulingAlgorithm {
 
   def addProcess(process: Process)
+  def addProcesses(processes: List[Process])
   def nextProcess: Run
 
 }
@@ -17,6 +18,7 @@ class RoundRobinScheduling(processes: Queue[Process], quantum: Int) extends Sche
   private var processQueue: Queue[Process] = processes
 
   override def addProcess(process: Process) = processQueue = processQueue enqueue process
+  override def addProcesses(processes: List[Process]) = processQueue = processQueue enqueue processes
 
   override def nextProcess: Run = processQueue dequeue match {
     case (process, queue) =>
