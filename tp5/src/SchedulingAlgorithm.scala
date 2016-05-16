@@ -33,3 +33,23 @@ case class RoundRobinScheduling(quantum: Int) extends SchedulingAlgorithm {
 
   override def processes: List[Process] = processQueue.toList
 }
+
+case class PriorityScheduling(quantum: Int) extends SchedulingAlgorithm {
+
+  private var processList = List[Process]()
+
+  override def addProcess(process: Process) = processList = process :: processList
+  override def addProcesses(processes: List[Process]) = processList = processList ++ processes
+
+  override def nextProcess: Run = {
+    val head::tail = processList.sortBy(-_.priority)
+    val process = head
+    processList = tail
+    val time = if (quantum <= process.remaining) quantum else process.remaining
+    Run(process, time)
+  }
+
+  override def nonEmpty: Boolean = processList.nonEmpty
+
+  override def processes: List[Process] = processList
+}
