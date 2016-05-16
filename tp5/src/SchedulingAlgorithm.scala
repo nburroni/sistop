@@ -53,3 +53,42 @@ case class PriorityScheduling(quantum: Int) extends SchedulingAlgorithm {
 
   override def processes: List[Process] = processList
 }
+
+case object FirstComeFirstServeScheduling extends SchedulingAlgorithm {
+
+  private var processQueue = Queue[Process]()
+
+  override def addProcess(process: Process) = processQueue = processQueue enqueue process
+  override def addProcesses(processes: List[Process]) = processQueue = processQueue enqueue processes
+
+  override def nextProcess: Run = processQueue dequeue match {
+    case (process, queue) =>
+      processQueue = queue
+      val time = process.remaining
+      Run(process, time)
+  }
+
+  override def nonEmpty: Boolean = processQueue.nonEmpty
+
+  override def processes: List[Process] = processQueue.toList
+}
+
+case object ShortestJobFirstScheduling extends SchedulingAlgorithm {
+
+  private var processList = List[Process]()
+
+  override def addProcess(process: Process) = processList = process :: processList
+  override def addProcesses(processes: List[Process]) = processList = processList ++ processes
+
+  override def nextProcess: Run = {
+    val head::tail = processList.sortBy(_.cpuTotal)
+    val process = head
+    processList = tail
+    val time = process.remaining
+    Run(process, time)
+  }
+
+  override def nonEmpty: Boolean = processList.nonEmpty
+
+  override def processes: List[Process] = processList
+}

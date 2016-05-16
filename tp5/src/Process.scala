@@ -6,6 +6,7 @@ case class Process(id: Int, priority: Int, arrivalTime: Int, resources: List[Res
   def nextResource = resources.head
   def remaining = resources.head.time
   def done = resources == Nil
+  def cpuTotal = resources.filter(_.isInstanceOf[CPU]).map(_.time).sum
 
   def run(time: Int) =
     if (time >= remaining) copy(resources = resources.tail)
