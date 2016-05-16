@@ -8,14 +8,16 @@ trait SchedulingAlgorithm {
   def addProcess(process: Process)
   def addProcesses(processes: List[Process])
   def nextProcess: Run
+  def nonEmpty: Boolean
+  def processes: List[Process]
 
 }
 
 case class Run(process: Process, time: Int)
 
-class RoundRobinScheduling(processes: Queue[Process], quantum: Int) extends SchedulingAlgorithm {
+case class RoundRobinScheduling(quantum: Int) extends SchedulingAlgorithm {
 
-  private var processQueue: Queue[Process] = processes
+  private var processQueue = Queue[Process]()
 
   override def addProcess(process: Process) = processQueue = processQueue enqueue process
   override def addProcesses(processes: List[Process]) = processQueue = processQueue enqueue processes
@@ -26,4 +28,8 @@ class RoundRobinScheduling(processes: Queue[Process], quantum: Int) extends Sche
       val time = if (quantum <= process.remaining) quantum else process.remaining
       Run(process, time)
   }
+
+  override def nonEmpty: Boolean = processQueue.nonEmpty
+
+  override def processes: List[Process] = processQueue.toList
 }
