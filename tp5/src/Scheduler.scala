@@ -1,13 +1,17 @@
 /**
   * Created by nico on 02/05/16.
   */
-case class Scheduler(processes: List[Process], algorithm: SchedulingAlgorithm) {
+case class Scheduler(processes: List[Process], algorithm: SchedulingAlgorithm, outputName: String) {
 
   var clock = Clock()
 
   var pending = processes.sortBy(_.arrivalTime)
   var blocked = List[Process]()
   var finished = List[Process]()
+
+  val drawing = Drawing(outputName)
+
+  processes.sortBy(_.id).foreach( p => drawing.addProcess(p.id) )
 
   def start = {
     clockTicks(pending.head.arrivalTime)
@@ -20,6 +24,7 @@ case class Scheduler(processes: List[Process], algorithm: SchedulingAlgorithm) {
 
       if (algorithm.nonEmpty) {
         val Run(process, time) = algorithm.nextProcess
+        drawing.processRun(id = process.id, time = time)
         println(s"Run: $process ${time}ms")
         clockTicks(time)
         val newProcess = process.run(time)
@@ -45,22 +50,26 @@ case class Scheduler(processes: List[Process], algorithm: SchedulingAlgorithm) {
       printList(pending)
     }
     println("\nFinished scheduling all the processed processes processed by processing the non-processed processes turning them into processed processes... Bitch.\n")
+    drawing.write
   }
 
   def clockTicks(ticks: Int) = {
-    clock = clock.increase(ticks)
-
     val (ready, stillPending) = pending map {
       case p: Process => p.copy(arrivalTime = if (p.arrivalTime - ticks <= 0) 0 else p.arrivalTime - ticks)
     } partition(_.arrivalTime <= 0)
     pending = stillPending
 
-    val (unblocked, stillBlocked) = blocked.map(_.run(ticks)).takeWhile(!_.done).partition(_.nextResource.isInstanceOf[CPU])
+    val (unblocked, stillBlocked) = blocked.map { p =>
+//      drawing.processIO(p.id, ticks, clock.time)
+      p.run(ticks)
+    }.takeWhile(!_.done).partition(_.nextResource.isInstanceOf[CPU])
     blocked = stillBlocked
 
     algorithm addProcesses (ready ++ unblocked)
     println("Blocked: ")
     printList(blocked)
+
+    clock = clock.increase(ticks)
   }
 
   def notDone: Boolean = pending.nonEmpty || blocked.nonEmpty || algorithm.nonEmpty
