@@ -38,30 +38,31 @@ case class NRU(virtualMemory: VirtualMemory, memory: Memory, pageSize: Int) exte
 
 
   override def onSuccess(access: Access) = {
-    increaseAccesses
     access match {
       case Read(page) => pageTable += (access.pageId -> Category(r = true, m = false))
       case Write(page) => pageTable += (access.pageId -> Category(r = true,m = true))
     }
+    increaseAccesses
   }
 
   def increaseAccesses = {
     accesses += 1
-    if(accesses == 10){
+    if(accesses >= 10){
       pageTable = pageTable.map {
         case (id,category) => id -> Category(r = false, m = category.m)
       }
+      accesses = 0
     }
   }
 
   override def onPageFault(access: Access) = {
-    increaseAccesses
     val pageId = access.pageId
     if((memory.size/pageSize).toInt <= memory.pages.size) {
       val toRemoveId = pageTable.groupBy(_._2).toList.sortBy(_._1).head._2.head._1
       removePage(toRemoveId)
     }
     addPage(pageId)
+    increaseAccesses
   }
 
   def addPage(pageId: Int): Unit = {
