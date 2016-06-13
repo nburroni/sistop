@@ -1,11 +1,11 @@
 /**
   * Created by tombatto on 11/06/16.
   */
-abstract class PageReplacementAlgorithm(virtualMemory: VirtualMemory, memory: Memory) {
+abstract class PageReplacementAlgorithm(virtualMemory: VirtualMemory, memory: Memory, pageSize: Int) {
   def getPage(access: Access): (Int,Boolean) = {
     val virtualPages = virtualMemory.pageMap
     val memoryPages = memory.pageMap
-    val id = access.page.id
+    val id = access.pageId
 
     memoryPages.get(id) match {
       case None =>
@@ -24,7 +24,7 @@ abstract class PageReplacementAlgorithm(virtualMemory: VirtualMemory, memory: Me
   def onPageFault(access: Access)
 }
 
-case class NRU(virtualMemory: VirtualMemory, memory: Memory) extends PageReplacementAlgorithm(virtualMemory, memory){
+case class NRU(virtualMemory: VirtualMemory, memory: Memory, pageSize: Int) extends PageReplacementAlgorithm(virtualMemory, memory, pageSize){
   var accesses = 0
 
   case class Category(r: Boolean, m: Boolean) extends Ordered[Category] {
@@ -40,8 +40,8 @@ case class NRU(virtualMemory: VirtualMemory, memory: Memory) extends PageReplace
   override def onSuccess(access: Access) = {
     increaseAccesses
     access match {
-      case Read(page) => pageTable += (access.page.id -> Category(r = true, m = false))
-      case Write(page) => pageTable += (access.page.id -> Category(r = true,m = true))
+      case Read(page) => pageTable += (access.pageId -> Category(r = true, m = false))
+      case Write(page) => pageTable += (access.pageId -> Category(r = true,m = true))
     }
   }
 
@@ -56,15 +56,15 @@ case class NRU(virtualMemory: VirtualMemory, memory: Memory) extends PageReplace
 
   override def onPageFault(access: Access) = {
     increaseAccesses
-    val page = access.page
+    val pageId = access.pageId
     val toRemoveId = pageTable.groupBy(_._2).toList.sortBy(_._1).head._2.head._1
     removePage(toRemoveId)
-    addPage(page)
+    addPage(pageId)
   }
 
-  def addPage(page: Page): Unit = {
-    pageTable += page.id -> Category(r = true, m = false)
-    memory.addPage(page)
+  def addPage(pageId: Int): Unit = {
+    pageTable += pageId -> Category(r = true, m = false)
+    memory.addPage(Page(pageId,pageSize))
   }
 
   def removePage(toRemoveId: Int): Unit = {
@@ -74,21 +74,21 @@ case class NRU(virtualMemory: VirtualMemory, memory: Memory) extends PageReplace
 }
 
 
-case class FIFO(virtualMemory: VirtualMemory, memory: Memory) extends PageReplacementAlgorithm(virtualMemory, memory){
+case class FIFO(virtualMemory: VirtualMemory, memory: Memory, pageSize: Int) extends PageReplacementAlgorithm(virtualMemory, memory, pageSize){
 
   override def onSuccess(access: Access) = {
 
   }
 
   override def onPageFault(access: Access) = {
-    val page = access.page
+    val page = Page(access.pageId, pageSize)
     val toRemoveId = memory.pages.head.id
     memory.removePage(toRemoveId)
     memory.addPage(page)
   }
 }
 
-case class SecondChance(virtualMemory: VirtualMemory, memory: Memory) extends PageReplacementAlgorithm(virtualMemory, memory){
+case class SecondChance(virtualMemory: VirtualMemory, memory: Memory, pageSize: Int) extends PageReplacementAlgorithm(virtualMemory, memory, pageSize){
 
   case class Category(r: Boolean) extends Ordered[Category] {
     import scala.math.Ordered.orderingToOrdered
@@ -101,11 +101,11 @@ case class SecondChance(virtualMemory: VirtualMemory, memory: Memory) extends Pa
 
 
   override def onSuccess(access: Access) = {
-    pageTable += (access.page.id -> Category(r = true))
+    pageTable += (access.pageId -> Category(r = true))
   }
 
   override def onPageFault(access: Access) = {
-    val page = access.page
+    val page = Page(access.pageId, pageSize)
     val toRemoveId = findToRemove
     removePage(toRemoveId)
     addPage(page)
@@ -133,7 +133,7 @@ case class SecondChance(virtualMemory: VirtualMemory, memory: Memory) extends Pa
   }
 }
 
-case class Clock(virtualMemory: VirtualMemory, memory: Memory) extends PageReplacementAlgorithm(virtualMemory, memory){
+case class Clock(virtualMemory: VirtualMemory, memory: Memory, pageSize: Int) extends PageReplacementAlgorithm(virtualMemory, memory, pageSize){
   var handId = 0
 
   case class Category(r: Boolean) extends Ordered[Category] {
@@ -147,11 +147,11 @@ case class Clock(virtualMemory: VirtualMemory, memory: Memory) extends PageRepla
 
 
   override def onSuccess(access: Access) = {
-    pageTable += (access.page.id -> Category(r = true))
+    pageTable += (access.pageId -> Category(r = true))
   }
 
   override def onPageFault(access: Access) = {
-    val page = access.page
+    val page = Page(access.pageId, pageSize)
     val toRemoveId = findToRemove
     removePage(toRemoveId)
     addPage(page)

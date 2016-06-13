@@ -2,9 +2,9 @@
   * Created by tombatto on 11/06/16.
   */
 trait Access {
-  def page: Page
+  def pageId: Int
 }
 
-case class Read(page: Page) extends Access
+case class Read(pageId: Int) extends Access
 
-case class Write(page: Page) extends Access
+case class Write(pageId: Int) extends Access
