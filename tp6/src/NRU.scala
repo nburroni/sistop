@@ -57,8 +57,10 @@ case class NRU(virtualMemory: VirtualMemory, memory: Memory, pageSize: Int) exte
   override def onPageFault(access: Access) = {
     increaseAccesses
     val pageId = access.pageId
-    val toRemoveId = pageTable.groupBy(_._2).toList.sortBy(_._1).head._2.head._1
-    removePage(toRemoveId)
+    if((memory.size/pageSize).toInt <= memory.pages.size) {
+      val toRemoveId = pageTable.groupBy(_._2).toList.sortBy(_._1).head._2.head._1
+      removePage(toRemoveId)
+    }
     addPage(pageId)
   }
 
