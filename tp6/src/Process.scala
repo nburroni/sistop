@@ -5,8 +5,7 @@ case class Process(id: Int, virtualAddressSpace: List[Int], quantityOfCalls: Int
   var currentPage = 0
 
   def nextPage() : Int = {
-    if(Math.random() > probability)
-      virtualAddressSpace((Math.random()*virtualAddressSpace.size).toInt)
-    else currentPage
+    if(Math.random() > probability)currentPage = virtualAddressSpace((Math.random()*virtualAddressSpace.size).toInt)
+    currentPage
   }
 }
